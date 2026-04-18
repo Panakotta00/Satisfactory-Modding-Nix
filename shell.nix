@@ -14,10 +14,21 @@ let
 	wwise-cli = pkgs.callPackage (fetchTarball { url = "https://github.com/Panakotta00/wwise-cli/archive/master.tar.gz"; }) {};
 
 	nix-ld-lib-path = pkgs.lib.makeLibraryPath (with pkgs; [ libgbm dbus.lib dbus dbus.dev ]);
+
+	fhs = pkgs.buildFHSEnv {
+		name = "ue-shell-fhs";
+		targetPkgs = pkgs: (with pkgs; [
+			bash
+		]);
+	};
+
+	unreal-build = pkgs.writeShellScriptBin "UnrealBuild" "/home/yannic/SF-Modding/UnrealEngine/Engine/Build/BatchFiles/Linux/Build.sh $@";
 in pkgs.mkShell {	
 	buildInputs = with pkgs; [
 		msvc
+
 		wwise-cli
+		unreal-build
 
 		git
 		clang
@@ -40,7 +51,9 @@ in pkgs.mkShell {
 		perl
 		stdenv.cc.cc.lib
 		wineWow64Packages.stagingFull
+		cmake
 	];
+	packages = [ msvc fhs ];
 	
 	shellHook = ''
 		export DOTNET_ROOT="${pkgs.dotnet-sdk_6}/share/dotnet";
@@ -49,5 +62,6 @@ in pkgs.mkShell {
 		export LDFLAGS="-L${pkgs.dbus.lib}/lib -L${pkgs.dbus.dev}/lib"
 		export LD_FLAGS=$LDFLAGS
 		export UE_WINE_MSVC=${msvc}/opt/msvc
+		export VCTargetsPath=$UE_WINE_MSVC/MSBuild/Microsoft/VC/v170
 	'';
 }
